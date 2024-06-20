@@ -1,0 +1,45 @@
+[gd_scene load_steps=3 format=3 uid="uid://ce5fecgan52e0"]
+
+[ext_resource type="PackedScene" uid="uid://bphxerrarf7qe" path="res://Example.tscn" id="1_837wa"]
+[ext_resource type="Script" path="res://example_2.cs" id="1_f060r"]
+
+[node name="Example2" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_f060r")
+
+[node name="Label" type="Label" parent="."]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 23.0
+text = "Example 2:"
+
+[node name="HBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="CenterContainer" type="CenterContainer" parent="HBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Example" parent="HBoxContainer/CenterContainer" instance=ExtResource("1_837wa")]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+
+[node name="CenterContainer2" type="CenterContainer" parent="HBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Example2" parent="HBoxContainer/CenterContainer2" instance=ExtResource("1_837wa")]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
