@@ -39,7 +39,8 @@ public class GetNodeAttribute(string? Path = null, bool AllowNull = false, bool 
                 throw new ArgumentException($"Failed to find annotated node, GetNode(\"{path}\") returns null");
             }
 
-            if (field.FieldType != child.GetType())
+            var childType = child.GetType();
+            if (field.FieldType != childType && childType.IsSubclassOf(field.FieldType))
             {
                 throw new ArgumentException($"Expected GetNode(\"{path}\") to have type {field.FieldType} but got {child.GetType()}");
             }
