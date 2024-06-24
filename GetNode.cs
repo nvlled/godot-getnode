@@ -1,4 +1,5 @@
 ﻿using Godot;
+using System;
 using System.Reflection;
 
 namespace godot_getnode;
