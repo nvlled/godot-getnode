@@ -15,7 +15,7 @@ public static class NodeExtension
     }
 }
 
-[AttributeUsage(AttributeTargets.Field)]
+[AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
 public class GetNodeAttribute(string? Path = null, bool AllowNull = false, bool Unique = false) : Attribute
 {
     private readonly string? path = Path;
@@ -26,37 +26,47 @@ public class GetNodeAttribute(string? Path = null, bool AllowNull = false, bool 
 
     public static void Ready<T>(T node) where T : Node
     {
-
         if (node is null) return;
 
         var nodeType = node.GetType();
-        CacheEntry[]? fields;
+        CacheEntry[]? cacheEntry;
 
-        if (!cache.TryGetValue(nodeType.GUID, out fields))
+        if (!cache.TryGetValue(nodeType.GUID, out cacheEntry))
         {
-            GD.PrintT("no field cache", nodeType.Name);
-            var allFields = node.GetType().GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
             var temp = new List<CacheEntry>();
-            foreach (var field in allFields)
+            var getNodeType = typeof(GetNodeAttribute);
+            var bindingFlags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+            var members = node.GetType().GetMembers(bindingFlags);
+            foreach (var mem in members)
             {
-                var attr = (GetNodeAttribute?)field.GetCustomAttribute(typeof(GetNodeAttribute));
-                if (attr is not null)
+                var attr = (GetNodeAttribute?)mem.GetCustomAttribute(getNodeType);
+                if (attr is null)
                 {
-                    temp.Add(new CacheEntry(field, attr));
+                    continue;
                 };
+                if (mem is FieldInfo field)
+                {
+                    temp.Add(new CacheEntry(attr, field.FieldType, field.SetValue));
+                }
+                else if (mem is PropertyInfo prop)
+                {
+                    temp.Add(new CacheEntry(attr, prop.PropertyType, prop.SetValue));
+                }
             }
-            fields = temp.ToArray();
-            cache[nodeType.GUID] = fields;
+
+            var tempArray = temp.ToArray();
+            cache[nodeType.GUID] = tempArray;
+            cacheEntry = tempArray;
         }
 
-        foreach (var entry in fields)
+        foreach (var entry in cacheEntry)
         {
             var attr = entry.attr;
-            var field = entry.field;
-
-            var path = attr.path ?? field.Name;
-            if (attr.unique && path[0] != '%')
+            var path = attr.path ?? entry.Type.Name;
+            if (attr.unique && path?[0] != '%')
+            {
                 path = "%" + path;
+            }
 
             var child = node.GetNode(path);
             if (child is null)
@@ -66,18 +76,20 @@ public class GetNodeAttribute(string? Path = null, bool AllowNull = false, bool 
             }
 
             var childType = child.GetType();
-            if (field.FieldType != childType && !childType.IsSubclassOf(field.FieldType))
+            if (entry.Type != childType && !childType.IsSubclassOf(entry.Type))
             {
-                throw new ArgumentException($"Expected GetNode(\"{path}\") to have type {field.FieldType} but got {child.GetType()}");
+                throw new ArgumentException($"Expected GetNode(\"{path}\") to have type {entry.Type} but got {childType}");
             }
 
-            field.SetValue(node, child);
+            entry.SetValue(node, child);
         }
     }
 }
 
-class CacheEntry(FieldInfo field, GetNodeAttribute attr)
+class CacheEntry(GetNodeAttribute attr, Type type, Action<object?, object?> setValue)
 {
-    public FieldInfo field = field;
     public GetNodeAttribute attr = attr;
+
+    public Type Type = type;
+    public Action<object?, object?> SetValue = setValue;
 }
